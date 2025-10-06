@@ -453,6 +453,58 @@ end)
 
 Options.FlyToggle:SetValue(false)
 
+-- Spinbot Variables
+local spinEnabled = false
+local spinSpeed = 5
+
+-- 🔹 Toggle
+local SpinbotToggle = Tabs.Player:AddToggle("SpinbotToggle", {Title = "Spinbot", Default = false})
+SpinbotToggle:OnChanged(function(v)
+    spinEnabled = v
+end)
+Options.SpinbotToggle:SetValue(false)
+
+-- 🔹 Slider
+local SpinSpeedSlider = Tabs.Player:AddSlider("SpinSpeed", { 
+    Title = "Spin Speed", 
+    Description = "Changes the speed of the spin.", 
+    Default = 5, 
+    Min = 1, 
+    Max = 100, 
+    Rounding = 1,
+    Callback = function(Value)
+        spinSpeed = Value
+    end
+})
+
+-- 🔹 Spinbot loop
+RunService.RenderStepped:Connect(function()
+    if spinEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(spinSpeed), 0)
+    end
+end)
+
+-- Click Teleport Variables
+local clickTPEnabled = false
+
+-- 🔹 Toggle
+local ClickTeleportToggle = Tabs.Teleports:AddToggle("ClickTeleport", {Title = "Click TP", Default = false})
+ClickTeleportToggle:OnChanged(function(v)
+    clickTPEnabled = v
+end)
+Options.ClickTeleport:SetValue(false)
+
+-- 🔹 Click Teleport Logic
+local Mouse = LocalPlayer:GetMouse()
+
+Mouse.Button1Down:Connect(function()
+    if clickTPEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local targetPos = Mouse.Hit.Position
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos.X, targetPos.Y + 3, targetPos.Z)
+    end
+end)
+
+
 
 local resetDebounce = false
 
@@ -496,6 +548,247 @@ local Keybind = Tabs.Player:AddKeybind("ResetKey", {
         print("Keybind changed!", New)
     end
 })
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- ESP storage
+local espHighlights = {}
+local espNames = {}
+local espDistances = {}
+local espHealthBars = {}
+local espTracers = {}
+local espColor = Color3.fromRGB(96, 205, 255)
+local espSkeletons = {}
+
+local highlightEnabled = false
+local nameEnabled = false
+local distanceEnabled = false
+local healthEnabled = false
+local tracersEnabled = false
+local skeletonEnabled = false
+
+-- Helper to create text
+local function CreateText()
+    local text = Drawing.new("Text")
+    text.Visible = false
+    text.Color = espColor
+    text.Size = 13
+    text.Center = true
+    text.Outline = true
+    return text
+end
+
+-- Helper to create line (tracer)
+local function CreateLine()
+    local line = Drawing.new("Line")
+    line.Visible = false
+    line.Color = espColor
+    line.Thickness = 1
+    return line
+end
+
+local function UpdateESP()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player == LocalPlayer then continue end
+        local character = player.Character
+        if not character or not character:FindFirstChild("HumanoidRootPart") then
+            if espHighlights[player] then espHighlights[player].Enabled = false end
+            if espNames[player] then espNames[player].Visible = false end
+            if espDistances[player] then espDistances[player].Visible = false end
+            if espHealthBars[player] then espHealthBars[player].Visible = false end
+            if espTracers[player] then espTracers[player].Visible = false end
+            if espSkeletons[player] then
+                for _, line in pairs(espSkeletons[player]) do
+                    line.Visible = false
+                    line:Remove()
+                end
+                espSkeletons[player] = nil
+            end
+            continue
+        end
+
+        -- ✅ Highlight
+        if highlightEnabled then
+            if not espHighlights[player] then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "ESPHighlight"
+                highlight.Adornee = character
+                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                highlight.OutlineColor = espColor
+                highlight.FillColor = Color3.fromRGB(0,0,0)
+                highlight.FillTransparency = 1
+                highlight.Enabled = true
+                highlight.Parent = game:GetService("CoreGui")
+                espHighlights[player] = highlight
+            else
+                espHighlights[player].OutlineColor = espColor
+                espHighlights[player].Enabled = true
+            end
+        elseif espHighlights[player] then
+            espHighlights[player].Enabled = false
+        end
+
+        local rootPos, onScreen = Camera:WorldToViewportPoint(character.HumanoidRootPart.Position)
+        if not onScreen then
+            if espNames[player] then espNames[player].Visible = false end
+            if espDistances[player] then espDistances[player].Visible = false end
+            if espHealthBars[player] then espHealthBars[player].Visible = false end
+            if espTracers[player] then espTracers[player].Visible = false end
+            if espSkeletons[player] then
+                for _, line in pairs(espSkeletons[player]) do
+                    line.Visible = false
+                    line:Remove()
+                end
+                espSkeletons[player] = nil
+            end
+            continue
+        end
+
+        -- ✅ Name
+        if nameEnabled then
+            if not espNames[player] then espNames[player] = CreateText() end
+            espNames[player].Text = player.Name
+            espNames[player].Position = Vector2.new(rootPos.X, rootPos.Y - 30)
+            espNames[player].Color = espColor
+            espNames[player].Visible = true
+        elseif espNames[player] then
+            espNames[player].Visible = false
+        end
+
+        -- ✅ Distance
+        if distanceEnabled then
+            if not espDistances[player] then espDistances[player] = CreateText() end
+            local dist = math.floor((LocalPlayer.Character.HumanoidRootPart.Position - character.HumanoidRootPart.Position).Magnitude)
+            espDistances[player].Text = tostring(dist).." studs"
+            espDistances[player].Position = Vector2.new(rootPos.X, rootPos.Y + 20)
+            espDistances[player].Color = espColor
+            espDistances[player].Visible = true
+        elseif espDistances[player] then
+            espDistances[player].Visible = false
+        end
+
+        -- ✅ Health bar
+        if healthEnabled then
+            if not espHealthBars[player] then espHealthBars[player] = CreateText() end
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                local healthPercent = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
+                espHealthBars[player].Text = string.rep("|", math.floor(healthPercent * 10)) -- simple bar
+                espHealthBars[player].Position = Vector2.new(rootPos.X, rootPos.Y - 40)
+                espHealthBars[player].Color = Color3.fromRGB(0, 255, 0)
+                espHealthBars[player].Visible = true
+            end
+        elseif espHealthBars[player] then
+            espHealthBars[player].Visible = false
+        end
+
+        -- ✅ Tracers
+        if tracersEnabled then
+            if not espTracers[player] then espTracers[player] = CreateLine() end
+            espTracers[player].From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+            espTracers[player].To = Vector2.new(rootPos.X, rootPos.Y)
+            espTracers[player].Color = espColor
+            espTracers[player].Visible = true
+        elseif espTracers[player] then
+            espTracers[player].Visible = false
+        end
+
+        -- ✅ Skeleton ESP
+        if skeletonEnabled then
+            local bones = {}
+            local function getPartPos(name)
+                local part = character:FindFirstChild(name)
+                if part then
+                    local pos, visible = Camera:WorldToViewportPoint(part.Position)
+                    return Vector2.new(pos.X, pos.Y)
+                else
+                    return nil
+                end
+            end
+
+            bones.Head = getPartPos("Head")
+            bones.UpperTorso = getPartPos("UpperTorso") or getPartPos("Torso")
+            bones.LowerTorso = getPartPos("LowerTorso") or getPartPos("Torso")
+            bones.LeftUpperArm = getPartPos("LeftUpperArm") or getPartPos("Left Arm")
+            bones.LeftLowerArm = getPartPos("LeftLowerArm") or getPartPos("Left Arm")
+            bones.RightUpperArm = getPartPos("RightUpperArm") or getPartPos("Right Arm")
+            bones.RightLowerArm = getPartPos("RightLowerArm") or getPartPos("Right Arm")
+            bones.LeftUpperLeg = getPartPos("LeftUpperLeg") or getPartPos("Left Leg")
+            bones.LeftLowerLeg = getPartPos("LeftLowerLeg") or getPartPos("Left Leg")
+            bones.RightUpperLeg = getPartPos("RightUpperLeg") or getPartPos("Right Leg")
+            bones.RightLowerLeg = getPartPos("RightLowerLeg") or getPartPos("Right Leg")
+
+            if not espSkeletons[player] then espSkeletons[player] = {} end
+            -- remove old lines
+            for _, line in pairs(espSkeletons[player]) do
+                line.Visible = false
+                line:Remove()
+            end
+            espSkeletons[player] = {}
+
+            local function drawLine(a,b)
+                if a and b then
+                    local line = Drawing.new("Line")
+                    line.From = a
+                    line.To = b
+                    line.Color = espColor
+                    line.Thickness = 1
+                    line.Visible = true
+                    table.insert(espSkeletons[player], line)
+                end
+            end
+
+            drawLine(bones.Head, bones.UpperTorso)
+            drawLine(bones.UpperTorso, bones.LowerTorso)
+            drawLine(bones.UpperTorso, bones.LeftUpperArm)
+            drawLine(bones.LeftUpperArm, bones.LeftLowerArm)
+            drawLine(bones.UpperTorso, bones.RightUpperArm)
+            drawLine(bones.RightUpperArm, bones.RightLowerArm)
+            drawLine(bones.LowerTorso, bones.LeftUpperLeg)
+            drawLine(bones.LeftUpperLeg, bones.LeftLowerLeg)
+            drawLine(bones.LowerTorso, bones.RightUpperLeg)
+            drawLine(bones.RightUpperLeg, bones.RightLowerLeg)
+        elseif espSkeletons[player] then
+            for _, line in pairs(espSkeletons[player]) do
+                line.Visible = false
+                line:Remove()
+            end
+            espSkeletons[player] = nil
+        end
+    end
+end
+
+RunService.RenderStepped:Connect(UpdateESP)
+
+-- 🔹 UI
+local HighlightToggle = Tabs.Visuals:AddToggle("ESPHighlight", {Title = "Highlight", Default = false})
+HighlightToggle:OnChanged(function(v) highlightEnabled = v end)
+
+local NameToggle = Tabs.Visuals:AddToggle("ESPNames", {Title = "Names", Default = false})
+NameToggle:OnChanged(function(v) nameEnabled = v end)
+
+local DistanceToggle = Tabs.Visuals:AddToggle("ESPDistance", {Title = "Distance (Studs)", Default = false})
+DistanceToggle:OnChanged(function(v) distanceEnabled = v end)
+
+local HealthToggle = Tabs.Visuals:AddToggle("ESPHealth", {Title = "Health Bars", Default = false})
+HealthToggle:OnChanged(function(v) healthEnabled = v end)
+
+local TracerToggle = Tabs.Visuals:AddToggle("ESPTracers", {Title = "Tracers", Default = false})
+TracerToggle:OnChanged(function(v) tracersEnabled = v end)
+
+-- 🔹 Skeleton ESP Toggle
+local SkeletonToggle = Tabs.Visuals:AddToggle("SkeletonESP", {Title = "Skeleton ESP", Default = false})
+SkeletonToggle:OnChanged(function(v) skeletonEnabled = v end)
+Options.SkeletonESP:SetValue(false)
+
+-- 🔹 Color Picker
+local ColorPicker = Tabs.Visuals:AddColorpicker("ESPColor", {Title = "ESP Color", Default = espColor})
+ColorPicker:OnChanged(function(color)
+    espColor = color
+end)
 
 
 local Players = game:GetService("Players")
