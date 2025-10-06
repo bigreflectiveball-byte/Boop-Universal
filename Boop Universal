@@ -1,0 +1,133 @@
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "Boop Unvisersal " .. Fluent.Version,
+    SubTitle = "by boopra",
+    TabWidth = 70,
+    Size = UDim2.fromOffset(400, 400),
+    Acrylic = true, -- The blur may be detectable, setting this to false disables blur entirely
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl -- Used when theres no MinimizeKeybind
+})
+
+--Fluent provides Lucide Icons https://lucide.dev/icons/ for the tabs, icons are optional
+local Tabs = {
+    Key = Window:AddTab({ Title = "Key", Icon = "key" }),
+}
+
+local Options = Fluent.Options
+
+do
+    Fluent:Notify({
+        Title = "Welcome To Boop Universal!",
+        Content = "Made By Boopra",
+        SubContent = "SubContent", -- Optional
+        Duration = 5 -- Set to nil to make the notification not disappear
+    })
+
+
+
+    Tabs.Key:AddParagraph({
+        Title = "Key System",
+        Content = "Please get a key to continue."
+    })
+
+
+
+local Dropdown = Tabs.Key:AddDropdown("Key", {
+    Title = "Key Selection",
+    Values = {"4V8GSH24", "4H3N2N5B3", "8FNSF5WJG", "2JFGG467F", "V7SH23FG"},
+    Multi = false,
+    Default = nil,
+})
+
+local correctKey = "2JFGG467F"
+
+Tabs.Key:AddButton({
+    Title = "Check Key",
+    Description = "Did you guess right?",
+    Callback = function()
+        local selectedKey = Dropdown.Value -- get the dropdown’s selected value
+
+        if selectedKey == correctKey then
+            Fluent:Notify({
+                Title = "Access Granted!",
+                Content = "Correct key entered. Unloading UI...",
+                Duration = 3
+            })
+            
+            task.wait(1)
+
+			-- run Boop Universal loader (place inside "key correct" branch)
+do
+    local url = "https://raw.githubusercontent.com/bigreflectiveball-byte/Boop-Universal/refs/heads/main/Loader"
+    local ok, err = pcall(function()
+        local src = game:HttpGet(url, true)           -- fetch the script
+        local fn, loadErr = loadstring(src)           -- compile it
+        if not fn then error(loadErr) end
+        fn()                                          -- execute
+    end)
+
+    if ok then
+        print("Boop Universal loader executed successfully.")
+    else
+        warn("Failed to execute Boop loader:", err)
+    end
+end
+
+
+            Fluent:Destroy()
+        else
+            Fluent:Notify({
+                Title = "Wrong Key!",
+                Content = "Try again!",
+                Duration = 3
+            })
+        end
+    end
+})
+
+
+    
+
+end
+
+
+-- Addons:
+-- SaveManager (Allows you to have a configuration system)
+-- InterfaceManager (Allows you to have a interface managment system)
+
+-- Hand the library over to our managers
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+
+-- Ignore keys that are used by ThemeManager.
+-- (we dont want configs to save themes, do we?)
+SaveManager:IgnoreThemeSettings()
+
+-- You can add indexes of elements the save manager should ignore
+SaveManager:SetIgnoreIndexes({})
+
+-- use case for doing it this way:
+-- a script hub could have themes in a global folder
+-- and game configs in a separate folder per game
+InterfaceManager:SetFolder("FluentScriptHub")
+SaveManager:SetFolder("FluentScriptHub/specific-game")
+
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+
+Window:SelectTab(1)
+
+Fluent:Notify({
+    Title = "Boop Unviersal",
+    Content = "The script has been loaded.",
+    Duration = 8
+})
+
+-- You can use the SaveManager:LoadAutoloadConfig() to load a config
+-- which has been marked to be one that auto loads!
+SaveManager:LoadAutoloadConfig()
