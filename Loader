@@ -62,7 +62,7 @@ Tabs.Key:AddButton({
 
 			-- run Boop Universal loader (place inside "key correct" branch)
 do
-    local url = "https://raw.githubusercontent.com/bigreflectiveball-byte/Boop-Universal/refs/heads/main/Loader"
+    local url = "https://raw.githubusercontent.com/bigreflectiveball-byte/Boop-Universal/refs/heads/main/Boop%20Universal"
     local ok, err = pcall(function()
         local src = game:HttpGet(url, true)           -- fetch the script
         local fn, loadErr = loadstring(src)           -- compile it
