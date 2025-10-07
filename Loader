@@ -5,25 +5,17 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 local Window = Fluent:CreateWindow({
     Title = "Boop Unvisersal " .. Fluent.Version,
     SubTitle = "by boopra",
-    TabWidth = 100,
-    Size = UDim2.fromOffset(500, 500),
-    Acrylic = False, -- The blur may be detectable, setting this to false disables blur entirely
+    TabWidth = 70,
+    Size = UDim2.fromOffset(400, 400),
+    Acrylic = true, -- The blur may be detectable, setting this to false disables blur entirely
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.LeftControl -- Used when theres no MinimizeKeybind
 })
 
 --Fluent provides Lucide Icons https://lucide.dev/icons/ for the tabs, icons are optional
 local Tabs = {
-    Home = Window:AddTab({ Title = "Home", Icon = "diamond" }),
-    Player = Window:AddTab({ Title = "Player", Icon = "user" }),
-    World = Window:AddTab({ Title = "World", Icon = "code" }),
-    Visuals = Window:AddTab({ Title = "Visuals", Icon = "rectangle-vertical" }),
-    Teleports = Window:AddTab({ Title = "Teleports", Icon = "plane" }),
-    Other = Window:AddTab({ Title = "Other", Icon = "scan" }),
-	Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+    Key = Window:AddTab({ Title = "Key", Icon = "key" }),
 }
-
-
 
 local Options = Fluent.Options
 
@@ -37,465 +29,68 @@ do
 
 
 
-    Tabs.Home:AddParagraph({
-        Title = "Welcome!",
-        Content = "Looks like you guess the key. Have fun!"
+    Tabs.Key:AddParagraph({
+        Title = "Key System",
+        Content = "Please get a key to continue."
     })
 
-local Slider = Tabs.Player:AddSlider("Slider", {
-    Title = "FOV",
-    Description = "Changes player FOV.",
-    Default = 60,
-    Min = 50,
-    Max = 120,
-    Rounding = 1,
-    Callback = function(Value)
-        workspace.CurrentCamera.FieldOfView = Value
-    end
+
+
+local Dropdown = Tabs.Key:AddDropdown("Key", {
+    Title = "Key Selection",
+    Values = {"4V8GSH24", "4H3N2N5B3", "8FNSF5WJG", "2JFGG467F", "V7SH23FG"},
+    Multi = false,
+    Default = nil,
 })
 
+local correctKey = "2JFGG467F"
 
-    Slider:OnChanged(function(Value)
-        print("Slider changed:", Value)
+Tabs.Key:AddButton({
+    Title = "Check Key",
+    Description = "Did you guess right?",
+    Callback = function()
+        local selectedKey = Dropdown.Value -- get the dropdown’s selected value
+
+        if selectedKey == correctKey then
+            Fluent:Notify({
+                Title = "Access Granted!",
+                Content = "Correct key entered. Unloading UI...",
+                Duration = 3
+            })
+            
+            task.wait(1)
+
+			-- run Boop Universal loader (place inside "key correct" branch)
+do
+    local url = "https://raw.githubusercontent.com/bigreflectiveball-byte/Boop-Universal/refs/heads/main/Loader"
+    local ok, err = pcall(function()
+        local src = game:HttpGet(url, true)           -- fetch the script
+        local fn, loadErr = loadstring(src)           -- compile it
+        if not fn then error(loadErr) end
+        fn()                                          -- execute
     end)
 
-local Toggle = Tabs.World:AddToggle("BlackScreen", {Title = "FPS Saver Black", Default = false})
-
-Toggle:OnChanged(function(state)
-    local player = game.Players.LocalPlayer
-    local screen = player.PlayerGui:FindFirstChild("BlackScreen")
-
-    if state then
-        if not screen then
-            screen = Instance.new("ScreenGui")
-            screen.Name = "BlackScreen"
-            screen.IgnoreGuiInset = true
-            screen.Parent = player.PlayerGui
-
-            local blackFrame = Instance.new("Frame")
-            blackFrame.Size = UDim2.new(1, 0, 1, 0)
-            blackFrame.BackgroundColor3 = Color3.new(0, 0, 0)
-            blackFrame.BorderSizePixel = 0
-            blackFrame.Parent = screen
-        end
+    if ok then
+        print("Boop Universal loader executed successfully.")
     else
-        if screen then
-            screen:Destroy()
-        end
-    end
-end)
-
-Options.BlackScreen:SetValue(false)
-
-local Toggle = Tabs.World:AddToggle("WhiteScreen", {Title = "FPS Saver White", Default = false})
-
-Toggle:OnChanged(function(state)
-    local player = game.Players.LocalPlayer
-    local screen = player.PlayerGui:FindFirstChild("WhiteScreen")
-
-    if state then
-        if not screen then
-            screen = Instance.new("ScreenGui")
-            screen.Name = "WhiteScreen"
-            screen.IgnoreGuiInset = true
-            screen.Parent = player.PlayerGui
-
-            local whiteFrame = Instance.new("Frame")
-            whiteFrame.Size = UDim2.new(1, 0, 1, 0)
-            whiteFrame.BackgroundColor3 = Color3.new(1, 1, 1) -- white
-            whiteFrame.BorderSizePixel = 0
-            whiteFrame.Parent = screen
-        end
-    else
-        if screen then
-            screen:Destroy()
-        end
-    end
-end)
-
-Options.WhiteScreen:SetValue(false)
-
-local Toggle = Tabs.World:AddToggle("BlurScreen", {Title = "Blur Screen", Default = false})
-
-Toggle:OnChanged(function(state)
-    local player = game.Players.LocalPlayer
-    local screen = player.PlayerGui:FindFirstChild("BlurScreen")
-
-    if state then
-        if not screen then
-            screen = Instance.new("ScreenGui")
-            screen.Name = "BlurScreen"
-            screen.IgnoreGuiInset = true
-            screen.Parent = player.PlayerGui
-
-            local blurFrame = Instance.new("Frame")
-            blurFrame.Size = UDim2.new(1, 0, 1, 0)
-            blurFrame.BackgroundColor3 = Color3.new(1, 1, 1)
-            blurFrame.BackgroundTransparency = 0.8
-            blurFrame.BorderSizePixel = 0
-            blurFrame.Parent = screen
-
-            local blurEffect = Instance.new("BlurEffect")
-            blurEffect.Name = "FPSBlurEffect"
-            blurEffect.Size = 24 -- adjust blur intensity here
-            blurEffect.Parent = game.Lighting
-        end
-    else
-        if screen then
-            screen:Destroy()
-        end
-        local blurEffect = game.Lighting:FindFirstChild("FPSBlurEffect")
-        if blurEffect then
-            blurEffect:Destroy()
-        end
-    end
-end)
-
-Options.BlurScreen:SetValue(false)
-
-Tabs.World:AddButton({ 
-    Title = "Rejoin Server", 
-    Description = "Rejoins into the same server", 
-    Callback = function()
-        local PlaceId = game.PlaceId
-        local JobId = game.JobId
-        game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceId, JobId, game.Players.LocalPlayer)
-    end
-})
-
-local Slider = Tabs.Player:AddSlider("Speed", { 
-    Title = "Speed", 
-    Description = "Changes the humanoid speed", 
-    Default = 18, 
-    Min = 1, 
-    Max = 200, 
-    Rounding = 1,
-    Callback = function(Value)
-        local character = game.Players.LocalPlayer.Character
-        if character and character:FindFirstChild("Humanoid") then
-            character.Humanoid.WalkSpeed = Value
-        end
-    end
-})
-
-local Slider = Tabs.Player:AddSlider("Jump", { 
-    Title = "Jump Power", 
-    Description = "Changes the humanoid jump power", 
-    Default = 50, 
-    Min = 10, 
-    Max = 200, 
-    Rounding = 1,
-    Callback = function(Value)
-        local character = game.Players.LocalPlayer.Character
-        if character and character:FindFirstChild("Humanoid") then
-            character.Humanoid.JumpPower = Value
-        end
-    end
-})
-
-local resetDebounce = false
-
-local Keybind = Tabs.Player:AddKeybind("ResetKey", { 
-    Title = "Reset Keybind", 
-    Mode = "Hold", -- Always, Toggle, Hold 
-    Default = "X", -- String as the name of the keybind (MB1, MB2 for mouse buttons)
-
-    Callback = function(Value)
-        -- Value == true when pressed (for Hold), false when released
-        if not Value then return end
-
-        if resetDebounce then return end
-        resetDebounce = true
-
-        local player = game.Players.LocalPlayer
-        local ok, err = pcall(function()
-            if not player then return end
-            local char = player.Character
-            local humanoid = char and (char:FindFirstChildOfClass("Humanoid") or char:FindFirstChild("Humanoid"))
-
-            if humanoid and humanoid.Health ~= nil then
-                humanoid.Health = 0
-            else
-                -- Fallback if no humanoid (or the game blocks health changes)
-                if char then
-                    char:BreakJoints()
-                end
-            end
-        end)
-
-        if not ok then
-            warn("Reset attempt failed:", err)
-        end
-
-        wait(0.5) -- small cooldown so hold doesn't spam resets
-        resetDebounce = false
-    end,
-
-    ChangedCallback = function(New)
-        print("Keybind changed!", New)
-    end
-})
-
-
-local Players = game:GetService("Players")
-local selectedPlayer = nil
-local playerDropdown
-
--- Function to update the dropdown list with player names
-local function updatePlayerList()
-    local playerList = {}
-    for _, player in pairs(Players:GetPlayers()) do
-        table.insert(playerList, player.Name)
-    end
-
-    if playerDropdown then
-        playerDropdown:UpdateValues(playerList)
-    else
-        playerDropdown = Tabs.Teleports:AddDropdown("PlayerList", {
-            Title = "Select Player",
-            Values = playerList,
-            Multi = false,
-            Default = 1,
-        })
-
-        playerDropdown:OnChanged(function(value)
-            selectedPlayer = value
-            print("Selected Player: " .. tostring(selectedPlayer))
-        end)
+        warn("Failed to execute Boop loader:", err)
     end
 end
 
--- Update the list when players join or leave
-Players.PlayerAdded:Connect(updatePlayerList)
-Players.PlayerRemoving:Connect(updatePlayerList)
 
--- Initial population
-updatePlayerList()
-
--- Button to spectate the selected player
-Tabs.Teleports:AddButton({
-    Title = "View Player",
-    Description = "Spectate the selected player",
-    Callback = function()
-        if selectedPlayer then
-            local player = Players:FindFirstChild(selectedPlayer)
-            if player and player.Character and player.Character:FindFirstChild("Humanoid") then
-                local camera = workspace.CurrentCamera
-                camera.CameraSubject = player.Character.Humanoid
-                camera.CameraType = Enum.CameraType.Attach
-                print("Now spectating: " .. selectedPlayer)
-            else
-                print("Player not found or has no humanoid!")
-            end
+            Fluent:Destroy()
         else
-            print("No player selected!")
-        end
-    end
-})
-
--- Button to stop spectating
-Tabs.Teleports:AddButton({
-    Title = "Stop Viewing",
-    Description = "Return camera to your character",
-    Callback = function()
-        local player = Players.LocalPlayer
-        if player and player.Character and player.Character:FindFirstChild("Humanoid") then
-            local camera = workspace.CurrentCamera
-            camera.CameraSubject = player.Character.Humanoid
-            camera.CameraType = Enum.CameraType.Custom
-            print("Stopped spectating")
-        else
-            print("Player or character not found!")
-        end
-    end
-})
-
-Tabs.Teleports:AddButton({
-    Title = "Refresh Player List",
-    Description = "Updates the player dropdown",
-    Callback = function()
-        -- Remove the old dropdown if it exists
-        if playerDropdown then
-            playerDropdown:Destroy()
-            playerDropdown = nil
-        end
-
-        -- Rebuild the dropdown
-        local playerList = {}
-        for _, player in pairs(Players:GetPlayers()) do
-            table.insert(playerList, player.Name)
-        end
-
-        playerDropdown = Tabs.Teleports:AddDropdown("PlayerList", {
-            Title = "Select Player",
-            Values = playerList,
-            Multi = false,
-            Default = 1,
-        })
-
-        playerDropdown:OnChanged(function(value)
-            selectedPlayer = value
-            print("Selected Player: " .. tostring(selectedPlayer))
-        end)
-
-        print("Player list refreshed")
-    end
-})
-
-Tabs.Teleports:AddButton({
-    Title = "Teleport to Player",
-    Description = "Teleports you to the selected player",
-    Callback = function()
-        if selectedPlayer then
-            local player = Players:FindFirstChild(selectedPlayer)
-            local localPlayer = Players.LocalPlayer
-
-            if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") 
-               and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                
-                localPlayer.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                print("Teleported to player: " .. selectedPlayer)
-            else
-                print("Player or character not found, or missing HumanoidRootPart!")
-            end
-        else
-            print("No player selected!")
-        end
-    end
-})
-
--- Store the textbox reference
-local scriptInput = Tabs.Other:AddInput("ScriptInput", { 
-    Title = "Script Input", 
-    Default = "",
-    Placeholder = "Place your script here", 
-    Numeric = false,
-    Finished = false,
-    Callback = function(value)
-        -- You could do live validation here if you want
-        print("Current input:", value)
-    end
-})
-
--- Execute button
-Tabs.Other:AddButton({ 
-    Title = "Execute Script", 
-    Description = "Executes the inputted script.", 
-    Callback = function()
-        local code = scriptInput.Value or ""
-        if code == "" or code == "Default" then
-            warn("No script input detected!")
-            return
-        end
-
-        -- Try to execute the code safely
-        local success, err = pcall(function()
-            loadstring(code)()  -- executes the inputted script
-        end)
-
-        if success then
-            print("Script executed successfully.")
-        else
-            warn("Error executing script:", err)
-        end
-    end
-})
-
--- Infinite Yield
-Tabs.Other:AddButton({
-    Title = "Execute Infinite Yield",
-    Description = "Loads Infinite Yield admin script",
-    Callback = function()
-        local success, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-        end)
-        if success then
-            print("Infinite Yield executed successfully.")
-        else
-            warn("Error executing Infinite Yield:", err)
-        end
-    end
-})
-
--- RemoteSpy
-Tabs.Other:AddButton({
-    Title = "Execute RemoteSpy",
-    Description = "Loads RemoteSpy script",
-    Callback = function()
-        local success, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/RemoteSpy.lua"))()
-        end)
-        if success then
-            print("RemoteSpy executed successfully.")
-        else
-            warn("Error executing RemoteSpy:", err)
-        end
-    end
-})
-
--- Fly GUI v3 (replace URL with actual raw URL)
-Tabs.Other:AddButton({
-    Title = "Execute Fly GUI v3",
-    Description = "Loads Fly GUI v3 script",
-    Callback = function()
-        local success, err = pcall(function()
-			loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
-        end)
-        if success then
-            print("Fly GUI v3 executed successfully.")
-        else
-            warn("Error executing Fly GUI v3:", err)
-        end
-    end
-})
-
--- TurtleSpy (replace URL)
-Tabs.Other:AddButton({
-    Title = "Execute TurtleSpy",
-    Description = "Loads TurtleSpy script",
-    Callback = function()
-        local success, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Turtle-Brand/Turtle-Spy/main/source.lua", true))()
-        end)
-        if success then
-            print("TurtleSpy executed successfully.")
-        else
-            warn("Error executing TurtleSpy:", err)
-        end
-    end
-})
-
--- C00lkid GUI (replace URL)
-Tabs.Other:AddButton({
-    Title = "Execute C00lkid GUI",
-    Description = "Loads C00lkid GUI script",
-    Callback = function()
-        local success, err = pcall(function()
-			loadstring(game:HttpGet("https://raw.githubusercontent.com/C00lHamoot/c00lgui-1/36410b4f949d3a10e8b39fc7cdcc8cfb67aefe25/c00l%20gui"))()
-        end)
-        if success then
-            print("C00lkid GUI executed successfully.")
-        else
-            warn("Error executing C00lkid GUI:", err)
-        end
-    end
-})
-
-Tabs.World:AddButton({
-    Title = "Leave Server",
-    Description = "Leaves the server.",
-    Callback = function()
-        local player = game.Players.LocalPlayer
-        if player then
-            player:Kick("You have left the server.")
-        else
-            warn("Could not leave — LocalPlayer not found.")
+            Fluent:Notify({
+                Title = "Wrong Key!",
+                Content = "Try again!",
+                Duration = 3
+            })
         end
     end
 })
 
 
-
+    
 
 end
 
