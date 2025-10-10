@@ -47,6 +47,77 @@ do
         Content = "A new and work-in-progress universal script packed with useful tools, smooth UI, and upcoming features — still being actively developed and improved."
     })
 
+local RunService = game:GetService("RunService")
+local Stats = game:GetService("Stats")
+local Players = game:GetService("Players")
+
+local fpsEnabled = false
+local pingEnabled = false
+
+-- Create Drawing texts
+local fpsText = Drawing.new("Text")
+fpsText.Size = 14
+fpsText.Color = Color3.fromRGB(0, 0, 0)
+fpsText.Outline = true
+fpsText.OutlineColor = Color3.fromRGB(255, 255, 255)
+fpsText.Center = false
+fpsText.Visible = false
+
+local pingText = Drawing.new("Text")
+pingText.Size = 14
+pingText.Color = Color3.fromRGB(0, 0, 0)
+pingText.Outline = true
+pingText.OutlineColor = Color3.fromRGB(255, 255, 255)
+pingText.Center = false
+pingText.Visible = false
+
+-- FPS calculation
+local lastTime = tick()
+local fps = 0
+
+RunService.RenderStepped:Connect(function()
+    local currentTime = tick()
+    fps = math.floor(1 / (currentTime - lastTime))
+    lastTime = currentTime
+
+    local viewport = workspace.CurrentCamera.ViewportSize
+    local baseX = viewport.X - 80
+    local baseY = viewport.Y - 40
+
+    if fpsEnabled then
+        fpsText.Text = "FPS: " .. tostring(fps)
+        fpsText.Position = Vector2.new(baseX, baseY)
+        fpsText.Visible = true
+    else
+        fpsText.Visible = false
+    end
+
+    if pingEnabled then
+        local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+        pingText.Text = "Ping: " .. tostring(ping) .. " ms"
+        pingText.Position = Vector2.new(baseX, baseY + 15)
+        pingText.Visible = true
+    else
+        pingText.Visible = false
+    end
+end)
+
+-- 🔹 UI Toggles
+local FPSToggle = Tabs.World:AddToggle("FPSToggle", {Title = "Show FPS", Default = false})
+FPSToggle:OnChanged(function(Value)
+    fpsEnabled = Value
+end)
+Options.FPSToggle:SetValue(false)
+
+local PingToggle = Tabs.World:AddToggle("PingToggle", {Title = "Show Ping (ms)", Default = false})
+PingToggle:OnChanged(function(Value)
+    pingEnabled = Value
+end)
+Options.PingToggle:SetValue(false)
+
+
+
+
 local Slider = Tabs.Player:AddSlider("Slider", {
     Title = "FOV",
     Description = "Changes player FOV.",
@@ -58,6 +129,44 @@ local Slider = Tabs.Player:AddSlider("Slider", {
         workspace.CurrentCamera.FieldOfView = Value
     end
 })
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local thirdPersonEnabled = false
+local savedMinZoom, savedMaxZoom, savedMode, savedType
+
+local Toggle = Tabs.Player:AddToggle("ThirdPerson", {Title = "3rd Person", Default = false}) 
+Toggle:OnChanged(function(Value)
+    thirdPersonEnabled = Value
+
+    if thirdPersonEnabled then
+        -- Save current settings before changing
+        savedMinZoom = LocalPlayer.CameraMinZoomDistance
+        savedMaxZoom = LocalPlayer.CameraMaxZoomDistance
+        savedMode = LocalPlayer.CameraMode
+        savedType = Camera.CameraType
+
+        -- Apply third person settings
+        LocalPlayer.CameraMinZoomDistance = 5
+        LocalPlayer.CameraMaxZoomDistance = 20
+        LocalPlayer.CameraMode = Enum.CameraMode.Classic
+        Camera.CameraType = Enum.CameraType.Custom
+    else
+        -- Restore saved camera settings
+        if savedMinZoom and savedMaxZoom and savedMode and savedType then
+            LocalPlayer.CameraMinZoomDistance = savedMinZoom
+            LocalPlayer.CameraMaxZoomDistance = savedMaxZoom
+            LocalPlayer.CameraMode = savedMode
+            Camera.CameraType = savedType
+        end
+    end
+end)
+
+Options.ThirdPerson:SetValue(false)
+
+
 
 
     Slider:OnChanged(function(Value)
@@ -504,6 +613,59 @@ Mouse.Button1Down:Connect(function()
     end
 end)
 
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local clickTweenEnabled = false
+local tweenSpeed = 10
+
+-- Create the toggle
+local Toggle = Tabs.Teleports:AddToggle("ClickTween", {Title = "Click Tween", Default = false}) 
+Toggle:OnChanged(function(Value)
+    clickTweenEnabled = Value
+end)
+Options.ClickTween:SetValue(false)
+
+-- Create the slider
+local Slider = Tabs.Teleports:AddSlider("TweenSpeed", { 
+    Title = "Tween Speed", 
+    Description = "Changes the speed of the tween", 
+    Default = 10, 
+    Min = 1, 
+    Max = 100, 
+    Rounding = 1,
+    Callback = function(Value)
+        tweenSpeed = Value
+    end
+})
+
+-- Handle mouse click
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if clickTweenEnabled and input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local mousePos = UserInputService:GetMouseLocation()
+        local ray = Camera:ViewportPointToRay(mousePos.X, mousePos.Y)
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
+        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+        
+        local result = workspace:Raycast(ray.Origin, ray.Direction * 1000, raycastParams)
+        if result and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = LocalPlayer.Character.HumanoidRootPart
+            local targetPosition = result.Position + Vector3.new(0, 3, 0)
+
+            local distance = (hrp.Position - targetPosition).Magnitude
+            local time = math.clamp(distance / tweenSpeed, 0.1, 10)
+
+            local tweenInfo = TweenInfo.new(time, Enum.EasingStyle.Linear)
+            local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPosition)})
+            tween:Play()
+        end
+    end
+end)
 
 
 local resetDebounce = false
